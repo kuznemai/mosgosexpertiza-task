@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, h } from 'vue'
-import {NSwitch, NDataTable, NDatePicker} from 'naive-ui'
+import {NSwitch, NDataTable, NDatePicker, NInput, NInputNumber} from 'naive-ui'
 import DateInputCell from "@/components/DateInputCell.vue";
 
 interface TableRow {
@@ -10,7 +10,6 @@ interface TableRow {
   priceEndDate: number
   priceNotNds: number
   nds: number
-  price: number
   fillEndDate: string
 }
 
@@ -47,15 +46,48 @@ const TABLE_HEADERS = [
   {
     key: "priceNotNds",
     title: "Цена, руб. без НДС",
+    render(row: TableRow) {
+      return h(NInputNumber, {
+        value: row.priceNotNds,
+        min: 0,
+        size: 'small',
+        showButton: false,
+        bordered: false,
+        onUpdateValue: (value: number | null) => {
+          if (value !== null) {
+            row.priceNotNds = value
+          }
+        }
+      })
+    }
   },
   {
     key: "nds",
     title: "НДС, %",
+    render(row: TableRow) {
+      return h(NInputNumber, {
+        value: row.nds,
+        min: 0,
+        max: 100,
+        size: 'small',
+        showButton: false,
+        bordered: false,
+        suffix: () => '%',
+        onUpdateValue: (value: number | null) => {
+          if (value !== null) {
+            row.nds  = value
+          }
+        }
+      })
+    }
   },
   {
     key: "price",
     title: "Цена, руб. с НДС",
-
+    render(row: TableRow){
+      const finalPrice = row.priceNotNds + (row.priceNotNds * row.nds / 100)
+      return finalPrice.toFixed(2)
+    }
   },
   {
     key: 'fillEndDate',
@@ -79,7 +111,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 1000,
     nds: 20,
-    price: 1200,
     fillEndDate: '2025-12-01',
   },
   {
@@ -89,7 +120,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 2000,
     nds: 10,
-    price: 2200,
     fillEndDate: '2025-11-15',
   },
   {
@@ -99,7 +129,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 1500,
     nds: 18,
-    price: 1770,
     fillEndDate: '2025-10-20',
   },
   {
@@ -109,7 +138,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 500,
     nds: 20,
-    price: 600,
     fillEndDate: '2025-09-15',
   },
   {
@@ -119,7 +147,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 3200,
     nds: 12,
-    price: 3584,
     fillEndDate: '2025-08-01',
   },
   {
@@ -129,7 +156,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 2700,
     nds: 15,
-    price: 3105,
     fillEndDate: '2025-12-31',
   },
   {
@@ -139,7 +165,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 1800,
     nds: 10,
-    price: 1980,
     fillEndDate: '2025-07-01',
   },
   {
@@ -149,7 +174,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 2200,
     nds: 5,
-    price: 2310,
     fillEndDate: '2025-11-01',
   },
   {
@@ -159,7 +183,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 800,
     nds: 20,
-    price: 960,
     fillEndDate: '2025-06-15',
   },
   {
@@ -169,7 +192,6 @@ const tableData = ref<TableRow[]>([
     priceEndDate: Date.now(),
     priceNotNds: 3500,
     nds: 18,
-    price: 4130,
     fillEndDate: '2025-10-10',
   }
 ])
