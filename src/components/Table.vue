@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, h, watch, watchEffect, computed} from 'vue'
+import {ref, h, watch, watchEffect, computed, onMounted} from 'vue'
 import {NSwitch, NDataTable, NDatePicker, NInput, NInputNumber} from 'naive-ui'
 import DateInputCell from "@/components/DateInputCell.vue";
 
@@ -122,98 +122,7 @@ const TABLE_HEADERS = [
   }
 ];
 
-const tableData = ref<TableRow[]>([
-  {
-    id: 1,
-    steName: 'Азот газообразный, сорт - первый, баллон 50 л',
-    isActual: true,
-    priceEndDate: Date.now(),
-    priceNotNds: 1200,
-    nds: 20,
-    fillEndDate: '2025-12-01',
-  },
-  {
-    id: 2,
-    steName: 'Ozone MicroOne H-67, набор фильтров для пылесосов Electrolux Cyclone',
-    isActual: false,
-    priceEndDate: Date.now(),
-    priceNotNds: 850,
-    nds: 10,
-    fillEndDate: '2025-11-15',
-  },
-  {
-    id: 3,
-    steName: 'Перчатки нитриловые черные, размер M, упаковка 100 шт',
-    isActual: true,
-    priceEndDate: Date.now(),
-    priceNotNds: 750,
-    nds: 18,
-    fillEndDate: '2025-10-20',
-  },
-  {
-    id: 4,
-    steName: 'Маска медицинская трёхслойная, упаковка 50 шт',
-    isActual: false,
-    priceEndDate: Date.now(),
-    priceNotNds: 400,
-    nds: 20,
-    fillEndDate: '2025-09-15',
-  },
-  {
-    id: 5,
-    steName: 'Дистиллированная вода, 5 л, ГОСТ 6709-72',
-    isActual: true,
-    priceEndDate: Date.now(),
-    priceNotNds: 230,
-    nds: 12,
-    fillEndDate: '2025-08-01',
-  },
-  {
-    id: 6,
-    steName: 'Перекись водорода 3%, 1 л, флакон',
-    isActual: true,
-    priceEndDate: Date.now(),
-    priceNotNds: 180,
-    nds: 15,
-    fillEndDate: '2025-12-31',
-  },
-  {
-    id: 7,
-    steName: 'Контейнер для утилизации медицинских отходов, 30 л',
-    isActual: false,
-    priceEndDate: Date.now(),
-    priceNotNds: 490,
-    nds: 10,
-    fillEndDate: '2025-07-01',
-  },
-  {
-    id: 8,
-    steName: 'Термометр лабораторный ртутный ТЛ-2, -10…+110°C',
-    isActual: true,
-    priceEndDate: Date.now(),
-    priceNotNds: 670,
-    nds: 5,
-    fillEndDate: '2025-11-01',
-  },
-  {
-    id: 9,
-    steName: 'Хлоргексидин биглюконат 0.05%, 1 л, канистра',
-    isActual: false,
-    priceEndDate: Date.now(),
-    priceNotNds: 950,
-    nds: 20,
-    fillEndDate: '2025-06-15',
-  },
-  {
-    id: 10,
-    steName: 'Лампа ультрафиолетовая бактерицидная 15 Вт, настенная',
-    isActual: true,
-    priceEndDate: Date.now(),
-    priceNotNds: 3100,
-    nds: 18,
-    fillEndDate: '2025-10-10',
-  }
-])
+const tableData = ref<TableRow[]>([])
 
 const sortState = ref<{
   columnKey: string | null;
@@ -242,6 +151,20 @@ function handleSortUpdate(state: typeof sortState.value) {
   console.log('Sort state updated:', state);
   sortState.value = { ...state };
 }
+
+onMounted(async () => {
+  try {
+    const response = await fetch('https://53d9a3d14d717f4f.mokky.dev/tabledata')
+    if (!response.ok) throw new Error(`Ошибка загрузки данных: ${response.status}`)
+    const data: TableRow[] = await response.json()
+    tableData.value = data.map(item => ({
+      ...item,
+      priceEndDate: typeof item.priceEndDate === 'string' ? Date.parse(item.priceEndDate) : item.priceEndDate
+    }))
+  } catch (e) {
+    console.error(e)
+  }
+})
 </script>
 
 <template>
