@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, h } from 'vue'
-import { NSwitch, NDataTable } from 'naive-ui'
+import {NSwitch, NDataTable, NDatePicker} from 'naive-ui'
+import DateInputCell from "@/components/DateInputCell.vue";
 
 interface TableRow {
   id: number
@@ -24,7 +25,18 @@ const TABLE_HEADERS = [
     title: 'В наличии',
     render(row: TableRow) {
       return h(NSwitch, {
-        value: row.isActual
+        value: row.isActual,
+        onUpdateValue: (value: boolean) => {
+          row.isActual = value
+          console.log({
+            id: row.id,
+            isActual: row.isActual,
+            priceNotNds: row.priceNotNds,
+            nds: row.nds,
+            price: row.price,
+            priceEndDate: row.priceEndDate
+          })
+        }
       })
     }
   },
@@ -46,12 +58,20 @@ const TABLE_HEADERS = [
 
   },
   {
-    key: "fillEndDate",
-    title: "Срок заполнения",
-  },
+    key: 'fillEndDate',
+    title: 'Срок заполнения',
+    render(row: TableRow) {
+      return h(DateInputCell, {
+        value: row.fillEndDate,
+        onUpdateValue: (val: string) => {
+          row.fillEndDate = val
+        }
+      })
+    }
+  }
 ];
 
-const tableData = ref([
+const tableData = ref<TableRow[]>([
   {
     id: 1,
     steName: 'СТЕ №1',
@@ -72,7 +92,88 @@ const tableData = ref([
     price: 2200,
     fillEndDate: '2025-11-15',
   },
+  {
+    id: 3,
+    steName: 'СТЕ №3',
+    isActual: true,
+    priceEndDate: Date.now(),
+    priceNotNds: 1500,
+    nds: 18,
+    price: 1770,
+    fillEndDate: '2025-10-20',
+  },
+  {
+    id: 4,
+    steName: 'СТЕ №4',
+    isActual: false,
+    priceEndDate: Date.now(),
+    priceNotNds: 500,
+    nds: 20,
+    price: 600,
+    fillEndDate: '2025-09-15',
+  },
+  {
+    id: 5,
+    steName: 'СТЕ №5',
+    isActual: true,
+    priceEndDate: Date.now(),
+    priceNotNds: 3200,
+    nds: 12,
+    price: 3584,
+    fillEndDate: '2025-08-01',
+  },
+  {
+    id: 6,
+    steName: 'СТЕ №6',
+    isActual: true,
+    priceEndDate: Date.now(),
+    priceNotNds: 2700,
+    nds: 15,
+    price: 3105,
+    fillEndDate: '2025-12-31',
+  },
+  {
+    id: 7,
+    steName: 'СТЕ №7',
+    isActual: false,
+    priceEndDate: Date.now(),
+    priceNotNds: 1800,
+    nds: 10,
+    price: 1980,
+    fillEndDate: '2025-07-01',
+  },
+  {
+    id: 8,
+    steName: 'СТЕ №8',
+    isActual: true,
+    priceEndDate: Date.now(),
+    priceNotNds: 2200,
+    nds: 5,
+    price: 2310,
+    fillEndDate: '2025-11-01',
+  },
+  {
+    id: 9,
+    steName: 'СТЕ №9',
+    isActual: false,
+    priceEndDate: Date.now(),
+    priceNotNds: 800,
+    nds: 20,
+    price: 960,
+    fillEndDate: '2025-06-15',
+  },
+  {
+    id: 10,
+    steName: 'СТЕ №10',
+    isActual: true,
+    priceEndDate: Date.now(),
+    priceNotNds: 3500,
+    nds: 18,
+    price: 4130,
+    fillEndDate: '2025-10-10',
+  }
 ])
+
 </script>
 
 <template>
