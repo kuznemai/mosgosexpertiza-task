@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@types/node": "^24.0.14",
-    "vue": "^3.5.17"
+    "vue": "^3.5.17",
+    "xicons": "^1.0.0"
   },
   "devDependencies": {
+    "@vicons/fluent": "^0.13.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "naive-ui": "^2.42.0",
     "typescript": "^5.8.3",

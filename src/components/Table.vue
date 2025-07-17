@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import {ref, h, watch, watchEffect, computed, onMounted} from 'vue'
-import {NSwitch, NDataTable, NDatePicker, NInput, NInputNumber} from 'naive-ui'
+import {ref, h, computed, onMounted, reactive} from 'vue';
+import {NSwitch, NDataTable, NDatePicker, NInputNumber} from 'naive-ui';
 import DateInputCell from "@/components/DateInputCell.vue";
 
 interface TableRow {
-  id: number
-  steName: string
-  isActual: boolean
-  priceEndDate: number
-  priceNotNds: number
-  nds: number
-  fillEndDate: string
+  id: number;
+  steName: string;
+  isActual: boolean;
+  priceEndDate: number;
+  priceNotNds: number;
+  nds: number;
+  fillEndDate: string;
 }
 
 const TABLE_HEADERS = [
@@ -29,14 +29,7 @@ const TABLE_HEADERS = [
         value: row.isActual,
         onUpdateValue: (value: boolean) => {
           row.isActual = value
-          console.log({
-            id: row.id,
-            isActual: row.isActual,
-            priceNotNds: row.priceNotNds,
-            nds: row.nds,
-            price: +(row.priceNotNds + row.priceNotNds * row.nds / 100).toFixed(2),
-            priceEndDate: row.priceEndDate
-          })
+          logRowState(row);
         }
       })
     }
@@ -51,12 +44,11 @@ const TABLE_HEADERS = [
         bordered: false,
         size: 'small',
         clearable: true,
-        style: {
-          width: '100%',
-        },
+        style: {width: '100%'},
         onUpdateValue: (value: number | null) => {
           if (value !== null) {
             row.priceEndDate = value
+            logRowState(row);
           }
         }
       })
@@ -75,6 +67,7 @@ const TABLE_HEADERS = [
         onUpdateValue: (value: number | null) => {
           if (value !== null) {
             row.priceNotNds = value
+            logRowState(row);
           }
         }
       })
@@ -95,6 +88,7 @@ const TABLE_HEADERS = [
         onUpdateValue: (value: number | null) => {
           if (value !== null) {
             row.nds = value
+            logRowState(row);
           }
         }
       })
@@ -115,22 +109,28 @@ const TABLE_HEADERS = [
       return h(DateInputCell, {
         value: row.fillEndDate,
         onUpdateValue: (val: string) => {
+          console.log('val', val)
           row.fillEndDate = val
+          logRowState(row);
         }
       })
     }
   }
 ];
 
-const tableData = ref<TableRow[]>([])
+const tableData = ref<TableRow[]>([]);
+const currentPage = ref(1);
+const pageSize = ref(10);
+
 
 const sortState = ref<{
   columnKey: string | null;
   order: 'ascend' | 'descend' | null;
 }>({
   columnKey: null,
-  order: null
+  order: null,
 });
+
 
 const sortedData = computed(() => {
   if (sortState.value.columnKey === 'steName' && sortState.value.order) {
@@ -147,38 +147,64 @@ const sortedData = computed(() => {
   return tableData.value;
 });
 
-function handleSortUpdate(state: typeof sortState.value) {
-  console.log('Sort state updated:', state);
-  sortState.value = { ...state };
-}
 
 onMounted(async () => {
   try {
-    const response = await fetch('https://53d9a3d14d717f4f.mokky.dev/tabledata')
-    if (!response.ok) throw new Error(`Ошибка загрузки данных: ${response.status}`)
-    const data: TableRow[] = await response.json()
+    const response = await fetch('https://53d9a3d14d717f4f.mokky.dev/tabledata');
+    const data: TableRow[] = await response.json();
     tableData.value = data.map(item => ({
       ...item,
-      priceEndDate: typeof item.priceEndDate === 'string' ? Date.parse(item.priceEndDate) : item.priceEndDate
-    }))
+      priceEndDate: typeof item.priceEndDate === 'string' ? Date.parse(item.priceEndDate) : item.priceEndDate,
+    }));
   } catch (e) {
-    console.error(e)
+    console.error('Ошибка при загрузке данных:', e);
+    // tableData.value = Array.from({length: 30}, (_, i) => ({
+    //   id: i + 1,
+    //   steName: `Item ${i + 1}`,
+    //   isActual: true,
+    //   priceEndDate: Date.now(),
+    //   priceNotNds: 1000 + i * 100,
+    //   nds: 20,
+    //   fillEndDate: '2025-12-31',
+    // }));
   }
-})
+});
+
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return sortedData.value.slice(start, end);
+});
+
+function logRowState(row: TableRow) {
+  const price = +(row.priceNotNds + row.priceNotNds * row.nds / 100).toFixed(2);
+  console.log({
+    id: row.id,
+    isActual: row.isActual,
+    priceNotNds: row.priceNotNds,
+    nds: row.nds,
+    price,
+    priceEndDate: row.priceEndDate
+  });
+}
 </script>
 
 <template>
   <div class="custom-table-wrapper">
+    <div class="custom-table">
     <n-data-table
         size="large"
         :columns="TABLE_HEADERS"
-        :data="sortedData"
-        :sorter="{ multiple: false }"
-        :sort-state="sortState"
-        @update:sort-state="handleSortUpdate"
-        class="custom-table"
+        :data="paginatedData"
+        :bordered="true"
+        :single-line="false"
+        class="data-table"
     />
+    </div>
+    <n-pagination v-model:page="currentPage"
+                  :page-count="tableData.length/pageSize" class="pagination"/>
   </div>
+
 </template>
 
 <style scoped>
@@ -206,15 +232,22 @@ onMounted(async () => {
 }
 
 .custom-table :deep(.n-data-table-tr:hover) {
-  background-color: #1662f3;
+  background-color: #224c9c;
 }
 
 .custom-table :deep(.n-data-table-base-table) {
   overflow: hidden;
 }
+
 .custom-table :deep(.n-data-table-th),
 .custom-table :deep(.n-data-table-td) {
   border: 1px solid #ccc;
   padding: 12px;
+}
+.custom-table :deep(.n-data-table-th:hover) {
+  background-color: inherit !important;
+}
+.pagination {
+  padding: 15px 0;
 }
 </style>
