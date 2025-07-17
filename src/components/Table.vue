@@ -158,15 +158,6 @@ onMounted(async () => {
     }));
   } catch (e) {
     console.error('Ошибка при загрузке данных:', e);
-    // tableData.value = Array.from({length: 30}, (_, i) => ({
-    //   id: i + 1,
-    //   steName: `Item ${i + 1}`,
-    //   isActual: true,
-    //   priceEndDate: Date.now(),
-    //   priceNotNds: 1000 + i * 100,
-    //   nds: 20,
-    //   fillEndDate: '2025-12-31',
-    // }));
   }
 });
 
