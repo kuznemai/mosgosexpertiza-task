@@ -121,65 +121,6 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const loading = ref(false);
 
-// const sortState = ref<{
-//   columnKey: string | null;
-//   order: 'ascend' | 'descend' | null;
-// }>({
-//   columnKey: null,
-//   order: null,
-// });
-
-
-// const sortedData = computed(() => {
-//   if (sortState.value.columnKey === 'steName' && sortState.value.order) {
-//     const sorted = [...tableData.value];
-//     sorted.sort((a, b) => {
-//       const nameA = a.steName.toLowerCase();
-//       const nameB = b.steName.toLowerCase();
-//       return sortState.value.order === 'ascend'
-//           ? nameA.localeCompare(nameB)
-//           : nameB.localeCompare(nameA);
-//     });
-//     return sorted;
-//   }
-//   return tableData.value;
-// });
-
-// const sortedData = computed(() => {
-//   if (sortState.value.columnKey === 'steName' && sortState.value.order) {
-//     const sorted = [...tableData.value];
-//     sorted.sort((a, b) => {
-//       const nameA = a.steName.toLowerCase();
-//       const nameB = b.steName.toLowerCase();
-//       return sortState.value.order === 'ascend'
-//           ? nameA.localeCompare(nameB)
-//           : nameB.localeCompare(nameA);
-//     });
-//     return sorted;
-//   }
-//   return tableData.value;
-// });
-// handleSorterChange(sorter) {
-//   if (!sorter || sorter.columnKey === 'steName') {
-//     if (!loadingRef.value) {
-//       loadingRef.value = true
-//       query(
-//           paginationReactive.page,
-//           paginationReactive.pageSize,
-//           !sorter ? false : sorter.order,
-//           column2Reactive.filterOptionValues
-//       ).then((data) => {
-//         column1Reactive.sortOrder = !sorter ? false : sorter.order
-//         dataRef.value = data.data
-//         paginationReactive.pageCount = data.pageCount
-//         paginationReactive.itemCount = data.total
-//         loadingRef.value = false
-//       })
-//     }
-//   }
-// },
-
-
 onMounted(async () => {
   loading.value = true;
   try {
@@ -215,13 +156,11 @@ function handleSorterChange(sorter) {
   }
 }
 
-
   const paginatedData = computed(() => {
     const start = (currentPage.value - 1) * pageSize.value;
     const end = start + pageSize.value;
-    return tableData.value.slice(start, end);//sortedData.value.slice поменять не забудь обратно
+    return tableData.value.slice(start, end);
   });
-
 
 
 function logRowState(row: TableRow) {
@@ -240,21 +179,23 @@ function logRowState(row: TableRow) {
 <template>
   <div class="custom-table-wrapper">
     <n-spin :show="loading" description="Загрузка...">
-      <div class="custom-table">
-        <n-data-table
-            size="large"
-            :columns="TABLE_HEADERS"
-            :data="paginatedData"
-            :bordered="true"
-            :single-line="false"
-            @update:sorter="handleSorterChange"
-            class="data-table"
-        />
+      <div style="overflow-x: auto;">
+        <div class="custom-table">
+          <n-data-table
+              size="large"
+              :columns="TABLE_HEADERS"
+              :data="paginatedData"
+              :bordered="true"
+              :single-line="false"
+              @update:sorter="handleSorterChange"
+              class="data-table"
+          />
+        </div>
       </div>
     </n-spin>
     <n-pagination
         v-model:page="currentPage"
-        :page-count="tableData.length / pageSize"
+        :page-count="Math.ceil(tableData.length / pageSize)"
         class="pagination"
     />
   </div>
@@ -264,11 +205,15 @@ function logRowState(row: TableRow) {
 .custom-table-wrapper {
   padding: 24px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  max-width: 100%;
+  overflow-x: auto;
 }
 
+.custom-table {
+  min-width: 800px;
+}
 .custom-table :deep(.n-data-table) {
   width: 100%;
-  height: 100%;
   font-family: 'Segoe UI', sans-serif;
   font-size: 14px;
 }
@@ -280,27 +225,12 @@ function logRowState(row: TableRow) {
   text-transform: uppercase;
 }
 
-.custom-table :deep(.n-data-table-td) {
+.custom-table :deep(.n-data-table-td),
+.custom-table :deep(.n-data-table-th) {
   padding: 12px;
-}
-
-.custom-table :deep(.n-data-table-base-table) {
-  overflow: hidden;
-}
-
-.custom-table :deep(.n-data-table-th),
-.custom-table :deep(.n-data-table-td) {
   border: 1px solid #ccc;
-  padding: 12px;
 }
 
-.custom-table :deep(.n-data-table-th:hover) {
-  background-color: inherit !important;
-}
-
-.pagination {
-  padding: 15px 0;
-}
 .custom-table :deep(.n-data-table-sorter) svg {
   width: 18px;
   height: 18px;
@@ -325,14 +255,48 @@ function logRowState(row: TableRow) {
   color: inherit;
 }
 
-.custom-table :deep(.n-data-table-tr:hover input) {
-  background-color: transparent;
-  color: inherit;
-}
+.custom-table :deep(.n-data-table-tr:hover input),
 .custom-table :deep(.n-data-table-tr:hover .n-base-suffix),
 .custom-table :deep(.n-data-table-tr:hover .n-input__suffix),
 .custom-table :deep(.n-data-table-tr:hover .n-input__prefix) {
+  background-color: transparent;
   color: inherit;
   fill: inherit;
+}
+
+.pagination {
+  padding: 15px 0;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .custom-table-wrapper {
+    padding: 16px;
+  }
+
+  .custom-table :deep(.n-data-table) {
+    font-size: 13px;
+  }
+
+  .custom-table :deep(.n-data-table-th),
+  .custom-table :deep(.n-data-table-td) {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .custom-table-wrapper {
+    padding: 12px;
+  }
+
+  .custom-table {
+    min-width: 600px;
+  }
+
+  .pagination {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 </style>
