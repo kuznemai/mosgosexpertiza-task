@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, h, computed, onMounted, reactive} from 'vue';
+import {ref, h, computed, onMounted, reactive, watch} from 'vue';
 import {NSwitch, NDataTable, NDatePicker, NInputNumber} from 'naive-ui';
 import DateInputCell from "@/components/DateInputCell.vue";
 
@@ -17,9 +17,7 @@ const TABLE_HEADERS = [
   {
     key: "steName",
     title: "Наименование СТЕ",
-    sorter: (row1: TableRow, row2: TableRow) => {
-      return row1.steName.toLowerCase().localeCompare(row2.steName.toLowerCase())
-    },
+    sorter: true
   },
   {
     key: 'isActual',
@@ -121,34 +119,69 @@ const TABLE_HEADERS = [
 const tableData = ref<TableRow[]>([]);
 const currentPage = ref(1);
 const pageSize = ref(10);
+const loading = ref(false);
+
+// const sortState = ref<{
+//   columnKey: string | null;
+//   order: 'ascend' | 'descend' | null;
+// }>({
+//   columnKey: null,
+//   order: null,
+// });
 
 
-const sortState = ref<{
-  columnKey: string | null;
-  order: 'ascend' | 'descend' | null;
-}>({
-  columnKey: null,
-  order: null,
-});
+// const sortedData = computed(() => {
+//   if (sortState.value.columnKey === 'steName' && sortState.value.order) {
+//     const sorted = [...tableData.value];
+//     sorted.sort((a, b) => {
+//       const nameA = a.steName.toLowerCase();
+//       const nameB = b.steName.toLowerCase();
+//       return sortState.value.order === 'ascend'
+//           ? nameA.localeCompare(nameB)
+//           : nameB.localeCompare(nameA);
+//     });
+//     return sorted;
+//   }
+//   return tableData.value;
+// });
 
-
-const sortedData = computed(() => {
-  if (sortState.value.columnKey === 'steName' && sortState.value.order) {
-    const sorted = [...tableData.value];
-    sorted.sort((a, b) => {
-      const nameA = a.steName.toLowerCase();
-      const nameB = b.steName.toLowerCase();
-      return sortState.value.order === 'ascend'
-          ? nameA.localeCompare(nameB)
-          : nameB.localeCompare(nameA);
-    });
-    return sorted;
-  }
-  return tableData.value;
-});
+// const sortedData = computed(() => {
+//   if (sortState.value.columnKey === 'steName' && sortState.value.order) {
+//     const sorted = [...tableData.value];
+//     sorted.sort((a, b) => {
+//       const nameA = a.steName.toLowerCase();
+//       const nameB = b.steName.toLowerCase();
+//       return sortState.value.order === 'ascend'
+//           ? nameA.localeCompare(nameB)
+//           : nameB.localeCompare(nameA);
+//     });
+//     return sorted;
+//   }
+//   return tableData.value;
+// });
+// handleSorterChange(sorter) {
+//   if (!sorter || sorter.columnKey === 'steName') {
+//     if (!loadingRef.value) {
+//       loadingRef.value = true
+//       query(
+//           paginationReactive.page,
+//           paginationReactive.pageSize,
+//           !sorter ? false : sorter.order,
+//           column2Reactive.filterOptionValues
+//       ).then((data) => {
+//         column1Reactive.sortOrder = !sorter ? false : sorter.order
+//         dataRef.value = data.data
+//         paginationReactive.pageCount = data.pageCount
+//         paginationReactive.itemCount = data.total
+//         loadingRef.value = false
+//       })
+//     }
+//   }
+// },
 
 
 onMounted(async () => {
+  loading.value = true;
   try {
     const response = await fetch('https://53d9a3d14d717f4f.mokky.dev/tabledata');
     const data: TableRow[] = await response.json();
@@ -158,14 +191,38 @@ onMounted(async () => {
     }));
   } catch (e) {
     console.error('Ошибка при загрузке данных:', e);
+  } finally {
+    loading.value = false;
   }
 });
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-  return sortedData.value.slice(start, end);
-});
+
+function handleSorterChange(sorter) {
+  const sorted = [...tableData.value];
+  if (sorter.columnKey === 'steName') {
+    sorted.sort((a, b) => {
+      const nameA = a.steName.toLowerCase();
+      const nameB = b.steName.toLowerCase();
+      if (sorter.order === 'ascend') {
+        return nameA.localeCompare(nameB);
+      } else if (sorter.order === 'descend') {
+        return nameB.localeCompare(nameA);
+      } else {
+        return 0;
+      }
+    });
+    tableData.value = sorted;
+  }
+}
+
+
+  const paginatedData = computed(() => {
+    const start = (currentPage.value - 1) * pageSize.value;
+    const end = start + pageSize.value;
+    return tableData.value.slice(start, end);//sortedData.value.slice поменять не забудь обратно
+  });
+
+
 
 function logRowState(row: TableRow) {
   const price = +(row.priceNotNds + row.priceNotNds * row.nds / 100).toFixed(2);
@@ -182,20 +239,25 @@ function logRowState(row: TableRow) {
 
 <template>
   <div class="custom-table-wrapper">
-    <div class="custom-table">
-    <n-data-table
-        size="large"
-        :columns="TABLE_HEADERS"
-        :data="paginatedData"
-        :bordered="true"
-        :single-line="false"
-        class="data-table"
+    <n-spin :show="loading" description="Загрузка...">
+      <div class="custom-table">
+        <n-data-table
+            size="large"
+            :columns="TABLE_HEADERS"
+            :data="paginatedData"
+            :bordered="true"
+            :single-line="false"
+            @update:sorter="handleSorterChange"
+            class="data-table"
+        />
+      </div>
+    </n-spin>
+    <n-pagination
+        v-model:page="currentPage"
+        :page-count="tableData.length / pageSize"
+        class="pagination"
     />
-    </div>
-    <n-pagination v-model:page="currentPage"
-                  :page-count="tableData.length/pageSize" class="pagination"/>
   </div>
-
 </template>
 
 <style scoped>
@@ -222,10 +284,6 @@ function logRowState(row: TableRow) {
   padding: 12px;
 }
 
-.custom-table :deep(.n-data-table-tr:hover) {
-  background-color: #224c9c;
-}
-
 .custom-table :deep(.n-data-table-base-table) {
   overflow: hidden;
 }
@@ -235,10 +293,46 @@ function logRowState(row: TableRow) {
   border: 1px solid #ccc;
   padding: 12px;
 }
+
 .custom-table :deep(.n-data-table-th:hover) {
   background-color: inherit !important;
 }
+
 .pagination {
   padding: 15px 0;
+}
+.custom-table :deep(.n-data-table-sorter) svg {
+  width: 18px;
+  height: 18px;
+  fill: #ffffff;
+  color: #ffffff;
+}
+
+.custom-table :deep(.n-data-table-sorter:hover) svg {
+  fill: #ffd700;
+  color: #ffd700;
+}
+
+.custom-table :deep(.n-data-table-tr:hover) {
+  background-color: #224c9c;
+  color: #fff;
+}
+
+.custom-table :deep(.n-data-table-tr:hover .n-input),
+.custom-table :deep(.n-data-table-tr:hover .n-date-picker),
+.custom-table :deep(.n-data-table-tr:hover .n-input-number) {
+  background-color: transparent;
+  color: inherit;
+}
+
+.custom-table :deep(.n-data-table-tr:hover input) {
+  background-color: transparent;
+  color: inherit;
+}
+.custom-table :deep(.n-data-table-tr:hover .n-base-suffix),
+.custom-table :deep(.n-data-table-tr:hover .n-input__suffix),
+.custom-table :deep(.n-data-table-tr:hover .n-input__prefix) {
+  color: inherit;
+  fill: inherit;
 }
 </style>
