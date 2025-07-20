@@ -11,6 +11,7 @@ interface TableRow {
   priceNotNds: number;
   nds: number;
   fillEndDate: string;
+  computedPriceWithNds?: number;
 }
 
 const TABLE_HEADERS = [
@@ -65,7 +66,7 @@ const TABLE_HEADERS = [
         onUpdateValue: (value: number | null) => {
           if (value !== null) {
             row.priceNotNds = value
-            logRowState(row);
+
           }
         }
       })
@@ -86,7 +87,7 @@ const TABLE_HEADERS = [
         onUpdateValue: (value: number | null) => {
           if (value !== null) {
             row.nds = value
-            logRowState(row);
+
           }
         }
       })
@@ -95,9 +96,9 @@ const TABLE_HEADERS = [
   {
     key: "price",
     title: "Цена, руб. с НДС",
-    render(row: TableRow) {
-      const finalPrice = row.priceNotNds + (row.priceNotNds * row.nds / 100)
-      return finalPrice.toFixed(2)
+    sorter: true,
+    render(row: TableRow ) {
+      return row.computedPriceWithNds?.toFixed(2) ?? '';
     }
   },
   {
@@ -107,7 +108,6 @@ const TABLE_HEADERS = [
       return h(DateInputCell, {
         value: row.fillEndDate,
         onUpdateValue: (val: string) => {
-          console.log('val', val)
           row.fillEndDate = val
           logRowState(row);
         }
@@ -125,11 +125,32 @@ onMounted(async () => {
   loading.value = true;
   try {
     const response = await fetch('https://53d9a3d14d717f4f.mokky.dev/tabledata');
-    const data: TableRow[] = await response.json();
-    tableData.value = data.map(item => ({
-      ...item,
-      priceEndDate: typeof item.priceEndDate === 'string' ? Date.parse(item.priceEndDate) : item.priceEndDate,
-    }));
+    const rawData: TableRow[] = await response.json();
+
+    tableData.value = rawData.map(item => {
+      const row = reactive({
+        ...item,
+        priceEndDate: typeof item.priceEndDate === 'string' ? Date.parse(item.priceEndDate) : item.priceEndDate,
+        computedPriceWithNds: 0,
+        _initialized: false
+      });
+
+      watch(
+          () => [row.priceNotNds, row.nds],
+          ([price, nds]) => {
+            row.computedPriceWithNds = +(price + price * nds / 100).toFixed(2);
+
+            if (row._initialized) {
+              logRowState(row);
+            } else {
+              row._initialized = true;
+            }
+          },
+          { immediate: true }
+      );
+
+      return row;
+    });
   } catch (e) {
     console.error('Ошибка при загрузке данных:', e);
   } finally {
@@ -154,6 +175,14 @@ function handleSorterChange(sorter) {
     });
     tableData.value = sorted;
   }
+  if (sorter.columnKey === 'price') {
+    sorted.sort((a, b) => {
+      return sorter.order === 'ascend'
+          ? a.computedPriceWithNds - b.computedPriceWithNds
+          : b.computedPriceWithNds - a.computedPriceWithNds;
+    });
+    tableData.value = sorted;
+  }
 }
 
   const paginatedData = computed(() => {
@@ -164,14 +193,13 @@ function handleSorterChange(sorter) {
 
 
 function logRowState(row: TableRow) {
-  const price = +(row.priceNotNds + row.priceNotNds * row.nds / 100).toFixed(2);
   console.log({
     id: row.id,
     isActual: row.isActual,
     priceNotNds: row.priceNotNds,
     nds: row.nds,
-    price,
-    priceEndDate: row.priceEndDate
+    priceEndDate: row.priceEndDate,
+    computedPriceWithNds: row.computedPriceWithNds
   });
 }
 </script>
@@ -224,7 +252,9 @@ function logRowState(row: TableRow) {
   color: #ffffff;
   text-transform: uppercase;
 }
-
+.custom-table :deep(.n-data-table-th:hover) {
+  background-color: #224c9c !important;
+}
 .custom-table :deep(.n-data-table-td),
 .custom-table :deep(.n-data-table-th) {
   padding: 12px;

@@ -18,17 +18,14 @@ const props = defineProps<{
   onUpdateValue: (val: string) => void;
 }>();
 
-// Конвертируем строку (ISO формат) в timestamp
 const dateValue = ref<number | null>(
     props.value ? Date.parse(props.value) : null
 );
 
-// Обновляем timestamp при изменении props.value
 watch(() => props.value, (newVal) => {
   dateValue.value = newVal ? Date.parse(newVal) : null;
 });
 
-// Отдаём обратно строку ISO (yyyy-MM-dd)
 function handleUpdate(val: number | null) {
   if (val !== null) {
     const iso = new Date(val).toISOString().split('T')[0];
