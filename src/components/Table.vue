@@ -66,7 +66,8 @@ const TABLE_HEADERS = [
         onUpdateValue: (value: number | null) => {
           if (value !== null) {
             row.priceNotNds = value
-
+            row.computedPriceWithNds = (row.priceNotNds+row.priceNotNds*row.nds/100)
+            logRowState(row)
           }
         }
       })
@@ -87,7 +88,8 @@ const TABLE_HEADERS = [
         onUpdateValue: (value: number | null) => {
           if (value !== null) {
             row.nds = value
-
+            row.computedPriceWithNds = (row.priceNotNds+row.priceNotNds*row.nds/100)
+            logRowState(row)
           }
         }
       })
@@ -131,23 +133,8 @@ onMounted(async () => {
       const row = reactive({
         ...item,
         priceEndDate: typeof item.priceEndDate === 'string' ? Date.parse(item.priceEndDate) : item.priceEndDate,
-        computedPriceWithNds: 0,
-        _initialized: false
+        computedPriceWithNds: (item.priceNotNds+item.nds / 100)
       });
-
-      watch(
-          () => [row.priceNotNds, row.nds],
-          ([price, nds]) => {
-            row.computedPriceWithNds = +(price + price * nds / 100).toFixed(2);
-
-            if (row._initialized) {
-              logRowState(row);
-            } else {
-              row._initialized = true;
-            }
-          },
-          { immediate: true }
-      );
 
       return row;
     });
@@ -161,6 +148,7 @@ onMounted(async () => {
 
 function handleSorterChange(sorter) {
   const sorted = [...tableData.value];
+  console.log('sorter.columnKey',sorter)
   if (sorter.columnKey === 'steName') {
     sorted.sort((a, b) => {
       const nameA = a.steName.toLowerCase();
