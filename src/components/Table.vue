@@ -16,10 +16,11 @@ interface TableRow {
 
 const TABLE_HEADERS = [
   {
-    key: "steName",
-    title: "Наименование СТЕ",
-    sorter: true
-  },
+    key: 'steName',
+    title: 'Наименование СТЕ',
+    sorter: true,
+
+    },
   {
     key: 'isActual',
     title: 'В наличии',
@@ -119,9 +120,9 @@ const TABLE_HEADERS = [
 ];
 
 const tableData = ref<TableRow[]>([]);
-const currentPage = ref(1);
-const pageSize = ref(10);
-const loading = ref(false);
+const currentPage = ref<number>(1);
+const pageSize = ref<number>(10);
+const loading = ref<boolean>(false);
 
 onMounted(async () => {
   loading.value = true;
@@ -133,7 +134,7 @@ onMounted(async () => {
       const row = reactive({
         ...item,
         priceEndDate: typeof item.priceEndDate === 'string' ? Date.parse(item.priceEndDate) : item.priceEndDate,
-        computedPriceWithNds: (item.priceNotNds+item.nds / 100)
+        computedPriceWithNds: item.priceNotNds + item.priceNotNds * item.nds / 100
       });
 
       return row;
@@ -166,14 +167,14 @@ function handleSorterChange(sorter) {
   if (sorter.columnKey === 'price') {
     sorted.sort((a, b) => {
       return sorter.order === 'ascend'
-          ? a.computedPriceWithNds - b.computedPriceWithNds
-          : b.computedPriceWithNds - a.computedPriceWithNds;
+          ? a.computedPriceWithNds! - b.computedPriceWithNds!
+          : b.computedPriceWithNds! - a.computedPriceWithNds!;
     });
     tableData.value = sorted;
   }
 }
 
-  const paginatedData = computed(() => {
+  const paginatedData = computed<TableRow[]>(() => {
     const start = (currentPage.value - 1) * pageSize.value;
     const end = start + pageSize.value;
     return tableData.value.slice(start, end);
@@ -190,6 +191,20 @@ function logRowState(row: TableRow) {
     computedPriceWithNds: row.computedPriceWithNds
   });
 }
+const pageSizes = computed(() => {
+  const total = tableData.value.length
+  const sizes: number[] = []
+  const baseSizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+  for (const size of baseSizes) {
+    if (size < total) {
+      sizes.push(size)
+    }
+  }
+  sizes.push(total)
+
+  return sizes
+})
 </script>
 
 <template>
@@ -209,9 +224,13 @@ function logRowState(row: TableRow) {
         </div>
       </div>
     </n-spin>
+
     <n-pagination
         v-model:page="currentPage"
+        v-model:page-size="pageSize"
         :page-count="Math.ceil(tableData.length / pageSize)"
+        show-size-picker
+        :page-sizes="pageSizes"
         class="pagination"
     />
   </div>
