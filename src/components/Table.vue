@@ -243,6 +243,23 @@ const tableDataSettings = computed(() =>
     };
   }),
 );
+
+function changeVisibility(key, value) {
+  TABLE_HEADERS.value.map((item) => {
+    if (item.key === key) {
+      item.isShow = value;
+    }
+  });
+  console.log("payload", key, value);
+}
+
+function changeColor(key, value) {
+  TABLE_HEADERS.value.map((item) => {
+    if (item.key === key) {
+      item.color = value;
+    }
+  });
+}
 </script>
 
 <template>
@@ -278,6 +295,16 @@ const tableDataSettings = computed(() =>
     <n-modal v-model:show="showModal" preset="dialog" title="Настройки">
       <ModalSettingTable
         :table-data-settings="tableDataSettings"
+        @update:is-show="
+          (key, value) => {
+            changeVisibility(key, value);
+          }
+        "
+        @update:color="
+          (key, value) => {
+            changeColor(key, value);
+          }
+        "
       ></ModalSettingTable>
       <template #action>
         <n-button @click="showModal = false">Закрыть</n-button>
@@ -289,7 +316,7 @@ const tableDataSettings = computed(() =>
         <div class="custom-table">
           <n-data-table
             size="large"
-            :columns="TABLE_HEADERS"
+            :columns="TABLE_HEADERS.filter((col) => col.isShow)"
             :data="paginatedData"
             :bordered="true"
             :single-line="false"
