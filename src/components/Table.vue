@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, h, computed, onMounted, reactive, watch } from "vue";
-import { NSwitch, NDataTable, NDatePicker, NInputNumber } from "naive-ui";
+import {ref, h, computed, onMounted, reactive, watch} from "vue";
+import {NSwitch, NDataTable, NDatePicker, NInputNumber} from "naive-ui";
 import DateInputCell from "@/components/DateInputCell.vue";
 import ModalSettingTable from "@/components/ModalSettingTable.vue";
 
@@ -21,13 +21,14 @@ const TABLE_HEADERS = ref([
     title: "Наименование СТЕ",
     sorter: true,
     isShow: true,
-    color: "pink",
+    color: "transparent",
   },
   {
     key: "isActual",
     title: "В наличии",
     isShow: true,
-    color: "pink",
+    style: {backgroundColor: "lightblue"},
+    color: "transparent",
     render(row: TableRow) {
       return h(NSwitch, {
         value: row.isActual,
@@ -42,7 +43,7 @@ const TABLE_HEADERS = ref([
     key: "priceEndDate",
     title: "Срок действия предоставленных сведений",
     isShow: true,
-    color: "pink",
+    color: "transparent",
     render(row: TableRow) {
       return h(NDatePicker, {
         value: row.priceEndDate,
@@ -50,7 +51,7 @@ const TABLE_HEADERS = ref([
         bordered: false,
         size: "small",
         clearable: true,
-        style: { width: "100%" },
+        style: {width: "100%"},
         onUpdateValue: (value: number | null) => {
           if (value !== null) {
             row.priceEndDate = value;
@@ -64,7 +65,7 @@ const TABLE_HEADERS = ref([
     key: "priceNotNds",
     title: "Цена, руб. без НДС",
     isShow: true,
-    color: "pink",
+    color: "transparent",
     render(row: TableRow) {
       return h(NInputNumber, {
         value: row.priceNotNds,
@@ -76,7 +77,7 @@ const TABLE_HEADERS = ref([
           if (value !== null) {
             row.priceNotNds = value;
             row.computedPriceWithNds =
-              row.priceNotNds + (row.priceNotNds * row.nds) / 100;
+                row.priceNotNds + (row.priceNotNds * row.nds) / 100;
             logRowState(row);
           }
         },
@@ -87,7 +88,7 @@ const TABLE_HEADERS = ref([
     key: "nds",
     title: "НДС, %",
     isShow: true,
-    color: "pink",
+    color: "transparent",
     render(row: TableRow) {
       return h(NInputNumber, {
         value: row.nds,
@@ -101,7 +102,7 @@ const TABLE_HEADERS = ref([
           if (value !== null) {
             row.nds = value;
             row.computedPriceWithNds =
-              row.priceNotNds + (row.priceNotNds * row.nds) / 100;
+                row.priceNotNds + (row.priceNotNds * row.nds) / 100;
             logRowState(row);
           }
         },
@@ -122,7 +123,7 @@ const TABLE_HEADERS = ref([
     key: "fillEndDate",
     title: "Срок заполнения",
     isShow: true,
-    color: "pink",
+    color: "transparent",
     render(row: TableRow) {
       return h(DateInputCell, {
         value: row.fillEndDate,
@@ -141,10 +142,11 @@ const pageSize = ref<number>(10);
 const loading = ref<boolean>(false);
 
 onMounted(async () => {
+
   loading.value = true;
   try {
     const response = await fetch(
-      "https://53d9a3d14d717f4f.mokky.dev/tabledata",
+        "https://53d9a3d14d717f4f.mokky.dev/tabledata",
     );
     const rawData: TableRow[] = await response.json();
 
@@ -152,11 +154,11 @@ onMounted(async () => {
       const row = reactive({
         ...item,
         priceEndDate:
-          typeof item.priceEndDate === "string"
-            ? Date.parse(item.priceEndDate)
-            : item.priceEndDate,
+            typeof item.priceEndDate === "string"
+                ? Date.parse(item.priceEndDate)
+                : item.priceEndDate,
         computedPriceWithNds:
-          item.priceNotNds + (item.priceNotNds * item.nds) / 100,
+            item.priceNotNds + (item.priceNotNds * item.nds) / 100,
       });
 
       return row;
@@ -166,6 +168,15 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+  const storedColumn = JSON.parse(localStorage.getItem('NoshowColumn' || '[]'));
+  console.log('storedColumn', storedColumn);
+  TABLE_HEADERS.value.forEach(elem => {
+    storedColumn.forEach(el => {
+      if (elem.key === el.key) {
+        elem.isShow = el.isShow;
+      }
+    });
+  });
 });
 
 function handleSorterChange(sorter) {
@@ -188,8 +199,8 @@ function handleSorterChange(sorter) {
   if (sorter.columnKey === "price") {
     sorted.sort((a, b) => {
       return sorter.order === "ascend"
-        ? a.computedPriceWithNds! - b.computedPriceWithNds!
-        : b.computedPriceWithNds! - a.computedPriceWithNds!;
+          ? a.computedPriceWithNds! - b.computedPriceWithNds!
+          : b.computedPriceWithNds! - a.computedPriceWithNds!;
     });
     tableData.value = sorted;
   }
@@ -234,23 +245,26 @@ function showSettings() {
 }
 
 const tableDataSettings = computed(() =>
-  TABLE_HEADERS.value.map((item) => {
-    return {
-      key: item.key,
-      title: item.title,
-      isShow: item.isShow,
-      color: item.color,
-    };
-  }),
+    TABLE_HEADERS.value.map((item) => {
+      return {
+        key: item.key,
+        title: item.title,
+        isShow: item.isShow,
+        color: item.color,
+      };
+    }),
 );
 
-function changeVisibility(key, value) {
-  TABLE_HEADERS.value.map((item) => {
+function changeVisibility(key: string, value: boolean) {
+
+  TABLE_HEADERS.value.forEach((item) => {
     if (item.key === key) {
       item.isShow = value;
     }
   });
-  console.log("payload", key, value);
+
+  const invisibleColumns = TABLE_HEADERS.value.map(item => ({key: item.key, isShow: item.isShow}));
+  localStorage.setItem('NoshowColumn', JSON.stringify(invisibleColumns));
 }
 
 function changeColor(key, value) {
@@ -260,24 +274,39 @@ function changeColor(key, value) {
     }
   });
 }
+
+const columns = computed(() =>
+        TABLE_HEADERS.value
+            .filter(c => c.isShow)
+    // .map(c => {
+    //   const baseRender = c.render;
+    //   return {
+    //     ...c,
+    //     render: (row: TableRow, index: number) => {
+    //       const content = baseRender ? baseRender(row, index) : row[c.key];
+    //       return h("td", { style: { backgroundColor: c.color, padding: "4px" } }, content);
+    //     }
+    //   }
+    // })
+);
 </script>
 
 <template>
   <div class="custom-table-wrapper">
     <n-icon size="30" @click="showSettings">
       <svg
-        version="1.1"
-        xmlns="http://www.w3.org/2000/svg"
-        xmlns:xlink="http://www.w3.org/1999/xlink"
-        x="0px"
-        y="0px"
-        viewBox="0 0 512 512"
-        enable-background="new 0 0 512 512"
-        xml:space="preserve"
+          version="1.1"
+          xmlns="http://www.w3.org/2000/svg"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
+          x="0px"
+          y="0px"
+          viewBox="0 0 512 512"
+          enable-background="new 0 0 512 512"
+          xml:space="preserve"
       >
         <g>
           <path
-            d="M413.967,276.8c1.06-6.235,1.06-13.518,1.06-20.8s-1.06-13.518-1.06-20.8l44.667-34.318
+              d="M413.967,276.8c1.06-6.235,1.06-13.518,1.06-20.8s-1.06-13.518-1.06-20.8l44.667-34.318
 		c4.26-3.118,5.319-8.317,2.13-13.518L418.215,115.6c-2.129-4.164-8.507-6.235-12.767-4.164l-53.186,20.801
 		c-10.638-8.318-23.394-15.601-36.16-20.801l-7.448-55.117c-1.06-4.154-5.319-8.318-10.638-8.318h-85.098
 		c-5.318,0-9.577,4.164-10.637,8.318l-8.508,55.117c-12.767,5.2-24.464,12.482-36.171,20.801l-53.186-20.801
@@ -294,13 +323,13 @@ function changeColor(key, value) {
     </n-icon>
     <n-modal v-model:show="showModal" preset="dialog" title="Настройки">
       <ModalSettingTable
-        :table-data-settings="tableDataSettings"
-        @update:is-show="
+          :table-data-settings="tableDataSettings"
+          @update:is-show="
           (key, value) => {
             changeVisibility(key, value);
           }
         "
-        @update:color="
+          @update:color="
           (key, value) => {
             changeColor(key, value);
           }
@@ -315,25 +344,25 @@ function changeColor(key, value) {
       <div style="overflow-x: auto">
         <div class="custom-table">
           <n-data-table
-            size="large"
-            :columns="TABLE_HEADERS.filter((col) => col.isShow)"
-            :data="paginatedData"
-            :bordered="true"
-            :single-line="false"
-            class="data-table"
-            @update:sorter="handleSorterChange"
+              size="large"
+              :columns="columns"
+              :data="paginatedData"
+              :bordered="true"
+              :single-line="false"
+              class="data-table"
+              @update:sorter="handleSorterChange"
           />
         </div>
       </div>
     </n-spin>
 
     <n-pagination
-      v-model:page="currentPage"
-      v-model:page-size="pageSize"
-      :page-count="Math.ceil(tableData.length / pageSize)"
-      show-size-picker
-      :page-sizes="pageSizes"
-      class="pagination"
+        v-model:page="currentPage"
+        v-model:page-size="pageSize"
+        :page-count="Math.ceil(tableData.length / pageSize)"
+        show-size-picker
+        :page-sizes="pageSizes"
+        class="pagination"
     />
   </div>
 </template>
