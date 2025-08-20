@@ -11,7 +11,7 @@ interface Props {
   }[];
 }
 const props = defineProps<Props>();
-const emit = defineEmits(["update:isShow", "update:color"]);
+const emit = defineEmits(["update:settings", "update:color"]);
 const TABLE_HEADERS = [
   { key: "title", title: "Название колонки" },
   {
@@ -22,7 +22,7 @@ const TABLE_HEADERS = [
         value: row.isShow,
         "onUpdate:value": (value: boolean) => {
           row.isShow = value;
-          emit("update:isShow", row.key, value);
+          emit("update:settings", { key: row.key, isShow: value });
         },
       });
     },
@@ -41,10 +41,10 @@ const TABLE_HEADERS = [
           background: "transparent",
           cursor: "pointer",
         },
-        onInput: (e: Event) => {
+        onChange: (e: Event) => {
           const target = e.target as HTMLInputElement;
           row.color = target.value;
-          emit("update:color", row.key, target.value);
+          emit("update:settings", { key: row.key, color: target.value });
         },
       });
     },

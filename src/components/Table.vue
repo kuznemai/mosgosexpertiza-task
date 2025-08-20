@@ -3,6 +3,7 @@ import {ref, h, computed, onMounted, reactive, watch} from "vue";
 import {NSwitch, NDataTable, NDatePicker, NInputNumber} from "naive-ui";
 import DateInputCell from "@/components/DateInputCell.vue";
 import ModalSettingTable from "@/components/ModalSettingTable.vue";
+import type {DataTableColumn} from 'naive-ui'
 
 interface TableRow {
   id: number;
@@ -21,7 +22,7 @@ const TABLE_HEADERS = ref([
     title: "Наименование СТЕ",
     sorter: true,
     isShow: true,
-    color: "transparent",
+    color: "pink",
   },
   {
     key: "isActual",
@@ -168,12 +169,13 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-  const storedColumn = JSON.parse(localStorage.getItem('NoshowColumn' || '[]'));
-  console.log('storedColumn', storedColumn);
-  TABLE_HEADERS.value.forEach(elem => {
-    storedColumn.forEach(el => {
+  settingsStorage.value = JSON.parse(localStorage.getItem('tableSettings'));
+
+  TABLE_HEADERS.value.map(elem => {
+    settingsStorage.value .forEach(el => {
       if (elem.key === el.key) {
         elem.isShow = el.isShow;
+        elem.color = el.color;
       }
     });
   });
@@ -255,40 +257,56 @@ const tableDataSettings = computed(() =>
     }),
 );
 
-function changeVisibility(key: string, value: boolean) {
+const settingsStorage = ref([])
+function changeSettings(payload: { key: string, isShow?: boolean, color?: string }) {
+  console.log(payload)
+  const existingSetting = settingsStorage.value.find((item) => item.key === payload.key);
+  console.log(existingSetting)
+
+  if(existingSetting) {
+    if(payload.isShow!== undefined){
+      existingSetting.isShow = payload.isShow;
+    }
+    if(payload.color!== undefined){
+      existingSetting.color = payload.color;
+    }
+  }else{
+    settingsStorage.value.push(payload);
+  }
+
 
   TABLE_HEADERS.value.forEach((item) => {
-    if (item.key === key) {
-      item.isShow = value;
-    }
-  });
+    if (item.key === payload.key) {
 
-  const invisibleColumns = TABLE_HEADERS.value.map(item => ({key: item.key, isShow: item.isShow}));
-  localStorage.setItem('NoshowColumn', JSON.stringify(invisibleColumns));
+      if(payload.isShow !== undefined) {
+        item.isShow = payload.isShow;
+      }
+      if(payload.color){
+        item.color = payload.color;
+      }
+    }
+  })
+  localStorage.setItem('tableSettings', JSON.stringify(settingsStorage.value));
 }
 
-function changeColor(key, value) {
-  TABLE_HEADERS.value.map((item) => {
-    if (item.key === key) {
-      item.color = value;
-    }
-  });
-}
-
-const columns = computed(() =>
-        TABLE_HEADERS.value
-            .filter(c => c.isShow)
-    // .map(c => {
-    //   const baseRender = c.render;
-    //   return {
-    //     ...c,
-    //     render: (row: TableRow, index: number) => {
-    //       const content = baseRender ? baseRender(row, index) : row[c.key];
-    //       return h("td", { style: { backgroundColor: c.color, padding: "4px" } }, content);
-    //     }
-    //   }
-    // })
-);
+console.log('settingsStorage',settingsStorage.value);
+const columns = computed<DataTableColumn<TableRow>[]>(() =>
+    TABLE_HEADERS.value
+        .filter(c => c.isShow)
+        .map((c) => {
+          const baseRender = c.render as DataTableColumn<TableRow>['render'] | undefined
+          return {
+            ...c,
+            render: baseRender ?? ((row: TableRow) => (row as any)[c.key]),
+            cellProps: () => ({
+              style: {
+                backgroundColor: c.color,
+                padding: '8px'
+              }
+            })
+          } as DataTableColumn<TableRow>
+        })
+)
 </script>
 
 <template>
@@ -324,16 +342,7 @@ const columns = computed(() =>
     <n-modal v-model:show="showModal" preset="dialog" title="Настройки">
       <ModalSettingTable
           :table-data-settings="tableDataSettings"
-          @update:is-show="
-          (key, value) => {
-            changeVisibility(key, value);
-          }
-        "
-          @update:color="
-          (key, value) => {
-            changeColor(key, value);
-          }
-        "
+          @update:settings="changeSettings"
       ></ModalSettingTable>
       <template #action>
         <n-button @click="showModal = false">Закрыть</n-button>
@@ -396,10 +405,8 @@ const columns = computed(() =>
   background-color: #224c9c !important;
 }
 
-.custom-table :deep(.n-data-table-td),
-.custom-table :deep(.n-data-table-th) {
-  padding: 12px;
-  border: 1px solid #ccc;
+.custom-table :deep(.n-data-table-td) {
+  padding: 8px;
 }
 
 .custom-table :deep(.n-data-table-sorter) svg {
@@ -415,7 +422,7 @@ const columns = computed(() =>
 }
 
 .custom-table :deep(.n-data-table-tr:hover) {
-  background-color: #224c9c;
+  filter: brightness(95%);
   color: #fff;
 }
 
@@ -457,6 +464,10 @@ const columns = computed(() =>
   margin-right: 10px;
 }
 
+.n-data-table-td input {
+  background-color: transparent !important;
+}
+
 @media (max-width: 1024px) {
   .custom-table-wrapper {
     padding: 16px;
@@ -466,10 +477,6 @@ const columns = computed(() =>
     font-size: 13px;
   }
 
-  .custom-table :deep(.n-data-table-th),
-  .custom-table :deep(.n-data-table-td) {
-    padding: 8px;
-  }
 }
 
 @media (max-width: 600px) {

@@ -8,6 +8,5 @@ import Table from "@/components/Table.vue";
 <Table></Table>
 </template>
 
-<style scoped>
-
+<style >
 </style>
